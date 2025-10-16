@@ -23,6 +23,8 @@ const formData = reactive<EmployeeForm>({
   role: "",
 });
 
+const documentType: string[] = ["T.I", "C.C", "Registro Cívil"];
+
 const form = ref<HTMLFormElement | null>(null);
 
 
@@ -115,7 +117,7 @@ const handleSubmit = (event: Event) => {
     <div class="col-md-4">
       <label for="validationCustomFirstName" class="form-label">Ingrese su primer nombre</label>
       <input
-        v-model="formData.firstName"
+        v-model.trim="formData.firstName"
         type="text"
         class="form-control"
         id="validationCustomFirstName"
@@ -131,7 +133,7 @@ const handleSubmit = (event: Event) => {
     <div class="col-md-4">
       <label for="validationCustomLastName" class="form-label">Ingrese su primer apellido</label>
       <input
-        v-model="formData.lastName"
+        v-model.trim="formData.lastName"
         type="text"
         class="form-control"
         id="validationCustomLastName"
@@ -169,9 +171,7 @@ const handleSubmit = (event: Event) => {
         required
       >
         <option selected disabled value="">Seleccione</option>
-        <option>T.I</option>
-        <option>C.C</option>
-        <option>Registro Cívil</option>
+        <option v-for="type in documentType">{{type}}</option>
       </select>
       <div class="invalid-feedback">Seleccione un Tipo de documento válido</div>
     </div>
