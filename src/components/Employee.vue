@@ -149,14 +149,14 @@ const handleSubmit = (event: Event) => {
     <div class="col-md-4">
       <label for="validationCustomCellphoneNumber" class="form-label">Ingrese su número de teléfono móvil</label>
       <input
-        v-model="formData.cellphone"
+        v-model.trim="formData.cellphone"
         type="text"
         class="form-control"
         id="validationCustomCellphoneNumber"
         placeholder="Número de teléfono"
         minlength="10"
         maxlength="15"
-        pattern="^[0-9]+$"
+        pattern="^[0-9+]+$"
         required
       />
       <div class="invalid-feedback">Por favor ingrese su número de teléfono</div>
@@ -171,13 +171,8 @@ const handleSubmit = (event: Event) => {
         required
       >
         <option selected disabled value="">Seleccione</option>
-<<<<<<< HEAD
-        <option>T.I</option>
-        <option>C.C</option>
-        <option>Registro Civil</option>
-=======
+
         <option v-for="type in documentType">{{type}}</option>
->>>>>>> 396968d5f8af44cf63b874298b495a85958db90a
       </select>
       <div class="invalid-feedback">Seleccione un Tipo de documento válido</div>
     </div>
@@ -185,14 +180,14 @@ const handleSubmit = (event: Event) => {
     <div class="col-md-4">
       <label for="validationCustomDocumentNumber" class="form-label">Ingrese su número de Documento</label>
       <input
-        v-model="formData.documentNumber"
+        v-model.trim="formData.documentNumber"
         type="text"
         class="form-control"
         id="validationCustomDocumentNumber"
         placeholder="Número de documento"
         minlength="10"
         maxlength="12"
-        pattern="^[0-9]+$"
+        pattern="^[A-Za-z0-9]+$"
         required
       />
       <div class="invalid-feedback">Por favor ingrese su número de documento</div>
