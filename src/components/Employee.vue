@@ -171,7 +171,7 @@ const handleSubmit = (event: Event) => {
         <option selected disabled value="">Seleccione</option>
         <option>T.I</option>
         <option>C.C</option>
-        <option>Registro Cívil</option>
+        <option>Registro Civil</option>
       </select>
       <div class="invalid-feedback">Seleccione un Tipo de documento válido</div>
     </div>

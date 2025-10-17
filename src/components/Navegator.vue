@@ -19,6 +19,9 @@
     <li class="nav-item">
       <router-link to="/employee" class="btn-nav">Empleados</router-link>
     </li>
+    <li class="nav-item">
+      <router-link to="/login" class="btn-nav">Login</router-link>
+    </li>
   </ul>
 </div>
 
