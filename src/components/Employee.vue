@@ -23,7 +23,7 @@ const formData = reactive<EmployeeForm>({
   role: "",
 });
 
-const documentType: string[] = ["T.I", "C.C", "Registro Cívil"];
+const documentType: string[] = ["T.I", "C.C", "Registro Civil"];
 
 const form = ref<HTMLFormElement | null>(null);
 
