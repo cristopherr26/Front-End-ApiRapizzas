@@ -9,7 +9,7 @@ interface EmployeeForm {
   documentNumber: string;
   password: string;
   confirmPassword: string;
-  role: string;
+  isAdministrator: boolean;
 }
 
 const formData = reactive<EmployeeForm>({
@@ -20,7 +20,7 @@ const formData = reactive<EmployeeForm>({
   documentNumber: "",
   password: "",
   confirmPassword: "",
-  role: "",
+  isAdministrator: false,
 });
 
 const documentType: string[] = ["T.I", "C.C", "Registro Cívil"];
@@ -89,7 +89,7 @@ const handleSubmit = (event: Event) => {
     confirmPasswordInput.classList.add("is-valid");
   }
 
-  if (!formData.role) isValid = false;
+  if (typeof formData.isAdministrator !== "boolean") isValid = false;
 
   formElement.classList.add("was-validated");
 
@@ -100,7 +100,7 @@ const handleSubmit = (event: Event) => {
       `Celular: ${formData.cellphone}\n` +
       `Tipo de documento: ${formData.documentType} \n` +
       `Tipo de documento:${formData.documentNumber}\n` +
-      `Rol: ${formData.role}`);
+      `EsAdministrador: ${formData.isAdministrator ? "Administrador" : "Mesero"}`);
     Object.keys(formData).forEach((key) => ((formData as any)[key] = ""));
     formElement.classList.remove("was-validated");
     document.querySelectorAll(".is-valid, .is-invalid").forEach((el) => {
@@ -237,36 +237,37 @@ const handleSubmit = (event: Event) => {
     </div>
 
     <div class="col-md-4">
-      <label class="form-label d-block mb-2">Seleccione su rol</label>
-      <div class="form-check form-check-inline">
-        <input
-          v-model="formData.role"
-          class="form-check-input"
-          type="radio"
-          name="Administrator-Waiter"
-          id="waiter"
-          value="waiter"
-          required
-        />
-        <label class="form-check-label" for="waiter">Mesero</label>
-      </div>
-      <div class="form-check form-check-inline">
-        <input
-          v-model="formData.role"
-          class="form-check-input"
-          type="radio"
-          name="Administrator-Waiter"
-          id="administrator"
-          value="administrator"
-        />
-        <label class="form-check-label" for="administrator">Administrador</label>
-      </div>
-      <div class="invalid-feedback">Debe seleccionar un rol antes de continuar.</div>
-    </div>
+  <label class="form-label d-block mb-2">Seleccione su rol</label>
 
-    <div class="col-12">
-      <button class="btn btn-primary" type="submit">Registrar</button>
-    </div>
+  <div class="form-check form-check-inline">
+    <input
+      v-model="formData.isAdministrator"
+      class="form-check-input"
+      type="radio"
+      name="Administrator-Waiter"
+      id="waiter"
+      :value="false"  
+      required
+    />
+    <label class="form-check-label" for="waiter">Mesero</label>
+  </div>
+
+  <div class="form-check form-check-inline">
+    <input
+      v-model="formData.isAdministrator"
+      class="form-check-input"
+      type="radio"
+      name="Administrator-Waiter"
+      id="administrator"
+      :value="true"  
+    />
+    <label class="form-check-label" for="administrator">Administrador</label>
+  </div>
+
+  <div class="invalid-feedback">
+    Debe seleccionar un rol antes de continuar.
+  </div>
+</div>
   </form>
 </template>
 
