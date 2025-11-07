@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, onMounted } from "vue";
+import { registerEmployee } from "../services/employeeService";
+import { getIdentificationTypes } from "../services/identificationTypeService";
 
 interface EmployeeForm {
   firstName: string;
@@ -23,13 +25,18 @@ const formData = reactive<EmployeeForm>({
   isAdministrator: false,
 });
 
-const documentType: string[] = ["T.I", "C.C", "Registro Civil"];
+type IdentificationType = {
+  identificationTypeId: string;
+  identificationTypeName: string;
+};
+const documentType = ref<IdentificationType[]>([]); 
 
 const form = ref<HTMLFormElement | null>(null);
 
 
 const lettersPattern = /^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$/;
-const numbersPattern = /^[0-9]+$/;
+const cellphonePattern = /^[0-9+]+$/;
+const alphanumericPattern = /^[A-Za-z0-9]+$/;
 
 const passwordPattern =
   /^(?=.{8,15}$)(?=.*[A-Z])(?=(?:.*\d){2,})(?=.*[!@#$%&*\?\-_,])[A-Za-z\d!@#$%&*\?\-_,]+$/;
@@ -46,7 +53,16 @@ const passwordPattern =
   }
 };
 
-const handleSubmit = (event: Event) => {
+onMounted(async () => {
+  try {
+    const data = await getIdentificationTypes();
+    documentType.value = data || [];
+  } catch (e) {
+    console.error("Error cargando tipos de documento:", e);
+  }
+});
+
+const handleSubmit = async (event: Event) => {
   event.preventDefault();
 
   const formElement = form.value;
@@ -54,16 +70,42 @@ const handleSubmit = (event: Event) => {
   formElement.classList.remove("was-validated");
   let isValid = true;
 
-  if (!lettersPattern.test(formData.firstName) || formData.firstName.length < 3)
-    isValid = false;
+  const firstNameInput = document.getElementById("validationCustomFirstName") as HTMLInputElement;
+if (!lettersPattern.test(formData.firstName) || formData.firstName.length < 3) {
+  firstNameInput.classList.remove("is-valid");
+  firstNameInput.classList.add("is-invalid");
+  isValid = false;
+} else {
+  firstNameInput.classList.remove("is-invalid");
+  firstNameInput.classList.add("is-valid");
+}
   
-  if (!lettersPattern.test(formData.lastName) || formData.lastName.length < 2)
-    isValid = false;
+  const lastNameInput = document.getElementById("validationCustomLastName") as HTMLInputElement;
+if (!lettersPattern.test(formData.lastName) || formData.lastName.length < 2) {
+  lastNameInput.classList.remove("is-valid");
+  lastNameInput.classList.add("is-invalid");
+  isValid = false;
+} else {
+  lastNameInput.classList.remove("is-invalid");
+  lastNameInput.classList.add("is-valid");
+}
   
-  if (!numbersPattern.test(formData.cellphone) || formData.cellphone.length < 10)
+  const cellphoneInput = document.getElementById("validationCustomCellphoneNumber") as HTMLInputElement;
+
+  if (!cellphonePattern.test(formData.cellphone)) {
+    cellphoneInput.classList.remove("is-valid");
+    cellphoneInput.classList.add("is-invalid");
     isValid = false;
+  } else if (formData.cellphone.length < 10 || formData.cellphone.length > 15) {
+    cellphoneInput.classList.remove("is-valid");
+    cellphoneInput.classList.add("is-invalid");
+    isValid = false;
+  } else {
+    cellphoneInput.classList.remove("is-invalid");
+    cellphoneInput.classList.add("is-valid");
+  }
   
-  if (!formData.documentType || !numbersPattern.test(formData.documentNumber))
+  if (!formData.documentType || !alphanumericPattern.test(formData.documentNumber))
     isValid = false;
 
   
@@ -94,18 +136,69 @@ const handleSubmit = (event: Event) => {
   formElement.classList.add("was-validated");
 
   if (isValid) {
-    alert(` Registro exitoso:\n\n` +
-      `Nombre: ${formData.firstName}\n` +
-      `Apellido: ${formData.lastName}\n` +
-      `Celular: ${formData.cellphone}\n` +
-      `Tipo de documento: ${formData.documentType} \n` +
-      `Tipo de documento:${formData.documentNumber}\n` +
-      `EsAdministrador: ${formData.isAdministrator ? "Administrador" : "Mesero"}`);
-    Object.keys(formData).forEach((key) => ((formData as any)[key] = ""));
-    formElement.classList.remove("was-validated");
-    document.querySelectorAll(".is-valid, .is-invalid").forEach((el) => {
-      el.classList.remove("is-valid", "is-invalid");
-    });
+    try {
+      const employee = {
+        name: formData.firstName,
+        lastName: formData.lastName,
+        cellPhoneNumber: formData.cellphone,
+        identificationType: { identificationTypeId: formData.documentType }, 
+        identificationNumber: formData.documentNumber,
+        administrator: formData.isAdministrator,
+        employeePassword: formData.password,
+      };
+
+      const response = await registerEmployee(employee);
+      alert("Empleado registrado correctamente");
+      console.log("Respuesta del backend:", response);
+
+      Object.keys(formData).forEach((key) => ((formData as any)[key] = ""));
+      formElement.classList.remove("was-validated");
+      document.querySelectorAll(".is-valid, .is-invalid").forEach((el) => {
+        el.classList.remove("is-valid", "is-invalid");
+      });
+    } catch (error: any) {
+      console.error("Error al enviar al backend:", error);
+       if (error.response) {
+        const status = error.response.status;
+        const backendMessage =
+          error.response.data?.message || "Sin mensaje del servidor";
+        const backendMessagesArray = error.response.data?.messages || [];
+
+        const allMessages = (
+          Array.isArray(backendMessagesArray)
+            ? backendMessagesArray.join(" ")
+            : backendMessage
+        ).toLowerCase();
+
+        if (
+          status === 409 ||
+          (status === 400 &&
+            (allMessages.includes("phone") ||
+              allMessages.includes("celular") ||
+              allMessages.includes("existe") ||
+              allMessages.includes("already") ||
+              allMessages.includes("mismo número")))
+        ) {
+          alert("Error: Ya existe un empleado registrado con esos datos...");
+        } else if (status === 400) {
+          alert(
+            "Los datos enviados no son válidos, por favor verifique el formulario y la consistencia de sus datos..."
+          );
+        } else if (status === 500) {
+          alert("Error interno del servidor. Intente nuevamente más tarde.");
+        } else {
+          alert(`Error desconocido (${status}): ${backendMessage}`);
+        }
+
+      } else if (error.request) {
+        alert(
+          "No se pudo conectar con el servidor. Verifique su conexión o que el backend esté corriendo..."
+        );
+
+      } else {
+        alert("Error inesperado en el Frontend: " + error.message);
+      }
+    }
   }
 };
 </script>
@@ -127,7 +220,7 @@ const handleSubmit = (event: Event) => {
         pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$"
         required
       />
-      <div class="invalid-feedback">Por favor ingrese su primer nombre</div>
+      <div class="invalid-feedback">Por favor ingrese un nombre válido (primer nombre)</div>
     </div>
 
     <div class="col-md-4">
@@ -143,7 +236,7 @@ const handleSubmit = (event: Event) => {
         pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ]+$"
         required
       />
-      <div class="invalid-feedback">Por favor ingrese su primer apellido</div>
+      <div class="invalid-feedback">Por favor ingrese un apellido válido, (primer apellido)</div>
     </div>
 
     <div class="col-md-4">
@@ -159,7 +252,7 @@ const handleSubmit = (event: Event) => {
         pattern="^[0-9+]+$"
         required
       />
-      <div class="invalid-feedback">Por favor ingrese su número de teléfono</div>
+      <div class="invalid-feedback">Por favor ingrese un número de teléfono válido</div>
     </div>
 
     <div class="col-md-4">
@@ -172,9 +265,15 @@ const handleSubmit = (event: Event) => {
       >
         <option selected disabled value="">Seleccione</option>
 
-        <option v-for="type in documentType">{{type}}</option>
+        <option
+          v-for="type in documentType"
+          :key="type.identificationTypeId"
+          :value="type.identificationTypeId"
+        >
+          {{ type.identificationTypeName }}
+        </option>
       </select>
-      <div class="invalid-feedback">Seleccione un Tipo de documento válido</div>
+      <div class="invalid-feedback">Debe seleccionar un Tipo de documento para registrarse</div>
     </div>
 
     <div class="col-md-4">
@@ -184,13 +283,13 @@ const handleSubmit = (event: Event) => {
         type="text"
         class="form-control"
         id="validationCustomDocumentNumber"
-        placeholder="Número de documento"
+        placeholder="Número o código de documento"
         minlength="10"
         maxlength="12"
-        pattern="^[A-Za-z0-9]+$"
+        pattern="^[A-Za-z0-9]+$" 
         required
       />
-      <div class="invalid-feedback">Por favor ingrese su número de documento</div>
+      <div class="invalid-feedback">Debe ingresar su número de documento para registrarse</div>
     </div>
 
     <div class="col-md-4">
@@ -268,6 +367,11 @@ const handleSubmit = (event: Event) => {
     Debe seleccionar un rol antes de continuar.
   </div>
 </div>
+    <div class="col-12 text-center mt-4">
+      <button class="btn btn-primary px-5 py-2" type="submit">
+        Registrar
+      </button>
+    </div>
   </form>
 </template>
 
